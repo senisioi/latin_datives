@@ -115,45 +115,48 @@ def get_row_from_window(window, fis, tok, lemma, grup, context, has_ad):
     row["Tokenized"] = ' '.join(window)
     return row
 
-infolder = './late'
-#infolder = './early'
-corpus = read_corpus(infolder)
+late_dir = './late'
+early_dir = './early'
 wds_to_match, wd2lemma = read_groupped_wds('./wds/grupuri')
-window_size = 10
 
-rows = []
-for fis, text in corpus:
-    print(fis)
-    tokens, contexts = tokenize_regex(text, 80)
-    for idx, (tok, context) in enumerate(zip(tokens, contexts)):
-        start = max([0, idx - window_size])
-        end = min([idx + window_size, len(tokens)])
-        sm_start = max([0, idx - 3])
-        sm_end = min([idx + 3, len(tokens)])
-        for grup, grup_wds in wds_to_match.items():
-            if tok.lower() in grup_wds:
-                #window = tokens[start:end]
-                left_window = tokens[start:idx]
-                right_window = tokens[idx:end]
-                if 'ad' in left_window:
-                    lemma = wd2lemma[tok.lower()]
-                    if 'ad' in right_window:
-                        row = get_row_from_window(tokens[start:end], fis, tok, lemma, grup, context, True)
+infolders = [late_dir, early_dir]
+
+for infolder in infolders:
+    corpus = read_corpus(infolder)
+    window_size = 10
+
+    rows = []
+    for fis, text in corpus:
+        print(fis)
+        tokens, contexts = tokenize_regex(text, 80)
+        for idx, (tok, context) in enumerate(zip(tokens, contexts)):
+            start = max([0, idx - window_size])
+            end = min([idx + window_size, len(tokens)])
+            sm_start = max([0, idx - 3])
+            sm_end = min([idx + 3, len(tokens)])
+            for grup, grup_wds in wds_to_match.items():
+                if tok.lower() in grup_wds:
+                    #window = tokens[start:end]
+                    left_window = tokens[start:idx]
+                    right_window = tokens[idx:end]
+                    if 'ad' in left_window:
+                        lemma = wd2lemma[tok.lower()]
+                        if 'ad' in right_window:
+                            row = get_row_from_window(tokens[start:end], fis, tok, lemma, grup, context, True)
+                        else:
+                            row = get_row_from_window(tokens[start:sm_end], fis, tok, lemma, grup, context, True)
+                        rows.append(row)
+                    elif 'ad' in right_window:
+                        lemma = wd2lemma[tok.lower()]
+                        row = get_row_from_window(tokens[sm_start:end], fis, tok, lemma, grup, context, True)
+                        rows.append(row)                
                     else:
-                        row = get_row_from_window(tokens[start:sm_end], fis, tok, lemma, grup, context, True)
-                    rows.append(row)
-                elif 'ad' in right_window:
-                    lemma = wd2lemma[tok.lower()]
-                    row = get_row_from_window(tokens[sm_start:end], fis, tok, lemma, grup, context, True)
-                    rows.append(row)                
-                else:
-                    lemma = wd2lemma[tok.lower()]
-                    row = get_row_from_window(tokens[sm_start:sm_end], fis, tok, lemma, grup, context, False)
-                    rows.append(row)
+                        lemma = wd2lemma[tok.lower()]
+                        row = get_row_from_window(tokens[sm_start:sm_end], fis, tok, lemma, grup, context, False)
+                        rows.append(row)
 
 
 df = pd.DataFrame(rows)
 df.to_excel(infolder+'.xlsx')
 
-
-print(1)
+print('Done!')
